@@ -10,7 +10,11 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        "status", "user_id", "course_id", "snap_url", "metadata"
+        "status",
+        "user_id",
+        "course_id",
+        "snap_url",
+        "metadata"
     ];
 
     protected $casts = [
