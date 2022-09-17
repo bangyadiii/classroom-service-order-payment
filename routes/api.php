@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,5 +20,9 @@ Route::prefix("/v1")->group(function () {
     Route::prefix("/orders")->group(function () {
         Route::post("/", [OrderController::class, "store"]);
         Route::get("/", [OrderController::class, "index"]);
+    });
+
+    Route::prefix("/notifications")->group(function () {
+        Route::post('/', [WebhookController::class, "midtransHandler"]);
     });
 });
