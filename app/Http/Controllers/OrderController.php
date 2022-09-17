@@ -14,9 +14,10 @@ class OrderController extends Controller
         \Midtrans\Config::$isProduction = (bool) \env("MIDTRANS_IS_PRODUCTION");
         \Midtrans\Config::$is3ds = (bool) \env("MIDTRANS_IS_3DS");
 
-        $snapUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
-
-        return $snapUrl;
+        // \Midtrans\Config::$overrideNotifUrl = "https://3ef1-180-248-0-44.ap.ngrok.io/api/v1/notifications";
+        $trx = \Midtrans\Snap::createTransaction($params);
+        $snapURL = $trx->redirect_url;
+        return $snapURL;
     }
 
 
@@ -31,15 +32,10 @@ class OrderController extends Controller
 
         return \response()->json([
             "status" => "success",
-            "message" => "berhasil mendapatkan data orders",
+            "message" => "berhasil mendapatkan data orders.",
             "data" => $orders->get()
         ]);
     }
-    public function create()
-    {
-        //
-    }
-
 
     public function store(Request $request)
     {
@@ -51,18 +47,21 @@ class OrderController extends Controller
             "course_id" => $course["id"]
         ]);
 
+
         $transactionDetails = [
-            "order_id" => $order->id . Str::random(5),
+            "order_id" => $order->id . '-' . Str::random(),
             "gross_amount" => $course["price"],
         ];
 
         $itemDetails = [
-            "id" => $course["id"],
-            "price" => $course["price"],
-            "quantity" => 1,
-            "name" => $course["name"],
-            "brand" => "PT Triadi",
-            "category" => "online course",
+            [
+                "id" => $course["id"],
+                "price" => $course["price"],
+                "quantity" => 1,
+                "name" => $course["name"],
+                "brand" => "PT Triadi",
+                "category" => "online course",
+            ]
         ];
 
         $customerDetails = [
@@ -75,9 +74,8 @@ class OrderController extends Controller
             "item_details"  => $itemDetails,
             "customer_details" => $customerDetails
         ];
-
-        $order->snapURL = $this->getMidtransSnapUrl($midtransParams);
-
+        $snapURL = $this->getMidtransSnapUrl($midtransParams);
+        $order->snap_url = $snapURL;
         $order->metadata = [
             "course_id" => $course['id'],
             "course_name" => $course["name"],
@@ -90,29 +88,8 @@ class OrderController extends Controller
 
         return \response()->json([
             "status" => "success",
-            "message" => "Order has been created",
+            "message" => "Order has been created.",
             "data" => $order
-        ]);
-    }
-
-
-    public function show(Order $order)
-    {
-        //
-    }
-
-
-    public function edit(Order $order)
-    {
-        //
-    }
-
-    public function update(Request $request, Order $order)
-    {
-        //
-    }
-    public function destroy(Order $order)
-    {
-        //
+        ], 201);
     }
 }

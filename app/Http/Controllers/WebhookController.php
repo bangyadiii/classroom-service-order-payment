@@ -74,6 +74,11 @@ class WebhookController extends Controller
 
         $order->save();
 
-        return \response()->json("ok");
+        $respons = \createPremiumAccess([
+            'course_id' => $order['course_id'],
+            'user_id' => $order['user_id']
+        ]);
+
+        return \response()->json($respons, $respons['http_code']);
     }
 }
