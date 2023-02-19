@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\PaymentLog;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class WebhookController extends Controller
 {
@@ -20,11 +22,9 @@ class WebhookController extends Controller
         $validSignatureKey =  hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
 
         if ($validSignatureKey !== $signatureKey) {
-            return \response()->json([
-                "status" => "error",
-                "message" => "Signaturekey not valid."
-            ], 400);
+            throw new BadRequestHttpException("Signaturekey not valid");
         }
+
         $transactionStatus = $data["transaction_status"];
 
         $fraudStatus = $data["fraud_status"];
@@ -34,35 +34,29 @@ class WebhookController extends Controller
 
         $order = Order::find(intval($realOrderId[0]));
         if (!$order) {
-            return \response()->json([
-                "status" => "error",
-                "message" => "Order not found."
-            ], 404);
+            \abort(404, "Order not found.");
         }
 
         if ($order->status === "success") {
-            return \response()->json([
-                "status" => "error",
-                "message" => "Operation not permited."
-            ], 405);
+            throw new BadRequestHttpException("Operation not permited.");
         }
 
 
         if ($transactionStatus == 'capture') {
             if ($fraudStatus == 'challenge') {
                 $order->status = "challenge";
-            } else if ($fraudStatus == 'accept') {
+            } elseif ($fraudStatus == 'accept') {
                 $order->status = "success";
             }
-        } else if ($transactionStatus == 'settlement') {
+        } elseif ($transactionStatus == 'settlement') {
             $order->status = "success";
-        } else if (
+        } elseif (
             $transactionStatus == 'cancel' ||
             $transactionStatus == 'deny' ||
             $transactionStatus == 'expire'
         ) {
             $order->status = "failure";
-        } else if ($transactionStatus == 'pending') {
+        } elseif ($transactionStatus == 'pending') {
             $order->status = "pending";
         }
         PaymentLog::create([
@@ -79,6 +73,6 @@ class WebhookController extends Controller
             'user_id' => $order['user_id']
         ]);
 
-        return \response()->json($respons, $respons['http_code']);
+        return \response()->json($respons, $respons["meta"]["http_code"]);
     }
 }

@@ -2,11 +2,20 @@
 
 namespace App\Exceptions;
 
+use App\Traits\ResponseFormatter;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
 {
+    use ResponseFormatter;
     /**
      * A list of exception types with their corresponding custom log levels.
      *
@@ -43,8 +52,39 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
-        $this->reportable(function (Throwable $e) {
-            //
+        $this->renderable(function (Throwable $th, Request $request) {
+            if ($request->is("api/*")) {
+                if ($th instanceof ValidationException) {
+                    return $this->error(
+                        Response::HTTP_UNPROCESSABLE_ENTITY,
+                        $th->getMessage(),
+                        $th->errors()
+                    );
+                } elseif ($th instanceof NotFoundHttpException) {
+
+                    return $this->error(
+                        Response::HTTP_NOT_FOUND,
+                        "NOT FOUND",
+                        $th->getMessage()
+                    );
+                } elseif ($th instanceof UnauthorizedHttpException) {
+
+                    return $this->error(
+                        Response::HTTP_UNAUTHORIZED,
+                        "Unauthorized",
+                        $th->getMessage()
+                    );
+                } elseif ($th instanceof BadRequestHttpException) {
+
+                    return $this->error(
+                        Response::HTTP_BAD_REQUEST,
+                        "Bad Request",
+                        $th->getMessage()
+                    );
+                } elseif ($th instanceof AccessDeniedHttpException) {
+                    return $this->error(Response::HTTP_FORBIDDEN, "FORBIDDEN", $th->getMessage());
+                }
+            }
         });
     }
 }

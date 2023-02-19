@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -16,8 +17,7 @@ class OrderController extends Controller
 
         // \Midtrans\Config::$overrideNotifUrl = "https://3ef1-180-248-0-44.ap.ngrok.io/api/v1/notifications";
         $trx = \Midtrans\Snap::createTransaction($params);
-        $snapURL = $trx->redirect_url;
-        return $snapURL;
+        return $trx->redirect_url;
     }
 
 
@@ -25,16 +25,12 @@ class OrderController extends Controller
     {
         $userIds = $request->query("user_id");
         $orders = Order::query();
+        if ($userIds) {
+            $orders->where("user_id", "=", $userIds);
+        }
+        $data = $orders->simplePaginate(10);
 
-        $orders->when($userIds, function ($query) use ($userIds) {
-            $query->where("user_id", "=", $userIds);
-        });
-
-        return \response()->json([
-            "status" => "success",
-            "message" => "berhasil mendapatkan data orders.",
-            "data" => $orders->get()
-        ]);
+        return $this->success(Response::HTTP_OK, "Berhasil mendapatkan data orders.", $data);
     }
 
     public function store(Request $request)
@@ -85,11 +81,6 @@ class OrderController extends Controller
         ];
 
         $order->save();
-
-        return \response()->json([
-            "status" => "success",
-            "message" => "Order has been created.",
-            "data" => $order
-        ], 201);
+        return $this->success(Response::HTTP_CREATED, "Order has been created.", $order);
     }
 }

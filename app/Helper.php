@@ -2,6 +2,19 @@
 
 use Illuminate\Support\Facades\Http;
 
+
+function error($code = 500, $message = "")
+{
+    return [
+        "meta" => [
+            "success" => false,
+            "http_code" => $code,
+            "message" => $message ?? "service user unavailable.",
+        ],
+        "data" => null
+    ];
+}
+
 function createPremiumAccess($body)
 {
     $url = env("SERVICE_COURSE_URL") . "/api/v1/mycourses/premium";
@@ -9,13 +22,9 @@ function createPremiumAccess($body)
     try {
         $response = Http::acceptJson()->post($url, $body);
         $data = $response->json();
-        $data["http_code"] = $response->getStatusCode();
+        $data["meta"]["http_code"] = $response->getStatusCode();
         return $data;
     } catch (\Throwable $th) {
-        return response()->json([
-            "status" => "error",
-            "http_code" => 500,
-            "message" => "Service course unavailable.",
-        ]);
+        return error(500, "Service course unavailable");
     }
 }
